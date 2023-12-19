@@ -51,19 +51,14 @@ def w_within_margin_scaled(team_performance_difference, draw_margin, c):
     return w_within_margin(team_performance_difference / c, draw_margin / c)
 
 def w_within_margin(team_performance_difference, draw_margin):
-    team_performance_difference_abs = abs(team_performance_difference)
-    denominator = (Gaussian.cumulative_to(draw_margin - team_performance_difference_abs) -
-                   Gaussian.cumulative_to(-draw_margin - team_performance_difference_abs))
+    abs_team_performance_difference = abs(team_performance_difference)
+    denominator = Gaussian.cumulative_to(draw_margin - abs_team_performance_difference) - Gaussian.cumulative_to(-draw_margin - abs_team_performance_difference)
+    
+    if denominator < 2.222758749e-162:  # Handling the case for very small denominators
+        if team_performance_difference < 0.0:
+            return 1.0
+        return 0.0
 
-    if denominator < 2.222758749e-162:
-        return 1.0
-
-    vt = v_within_margin(team_performance_difference_abs, draw_margin)
-
-    return (vt ** 2 +
-            (
-                (draw_margin - team_performance_difference_abs) *
-                Gaussian.at(draw_margin - team_performance_difference_abs) -
-                (-draw_margin - team_performance_difference_abs) *
-                Gaussian.at(-draw_margin - team_performance_difference_abs)) / denominator)
+    v = v_within_margin(team_performance_difference, draw_margin)
+    return v * (v + team_performance_difference - draw_margin) / denominator
 
