@@ -52,13 +52,34 @@ def w_within_margin_scaled(team_performance_difference, draw_margin, c):
 
 def w_within_margin(team_performance_difference, draw_margin):
     abs_team_performance_difference = abs(team_performance_difference)
-    denominator = Gaussian.cumulative_to(draw_margin - abs_team_performance_difference) - Gaussian.cumulative_to(-draw_margin - abs_team_performance_difference)
-    
-    if denominator < 2.222758749e-162:  # Handling the case for very small denominators
-        if team_performance_difference < 0.0:
-            return 1.0
-        return 0.0
+    print(f"w_within_margin - team_performance_difference: {team_performance_difference}, draw_margin: {draw_margin}, abs_team_performance_difference: {abs_team_performance_difference}")
 
-    v = v_within_margin(team_performance_difference, draw_margin)
-    return v * (v + team_performance_difference - draw_margin) / denominator
+    # Calculating the upper and lower boundaries for performance.
+    upper_bound = draw_margin - team_performance_difference
+    lower_bound = -draw_margin - team_performance_difference
+
+    # Calculating the Gaussian probability density for the boundaries.
+    pdf_upper_bound = Gaussian.at(upper_bound)
+    pdf_lower_bound = Gaussian.at(lower_bound)
+
+    # Calculating the cumulative probabilities for the boundaries.
+    cdf_upper_bound = Gaussian.cumulative_to(upper_bound)
+    cdf_lower_bound = Gaussian.cumulative_to(lower_bound)
+
+    # Computing the denominator as the difference between the cumulative probabilities.
+    denominator = cdf_upper_bound - cdf_lower_bound
+
+    # Handling cases where the denominator is very close to zero to avoid ZeroDivisionError.
+    if abs(denominator) < 1e-10:
+        return 0.0 if team_performance_difference < 0 else 1.0  # Depending on the team_performance_difference, return 0 or 1.
+
+    # Calculating the numerator by multiplying the Gaussian probability densities with the boundaries.
+    #numerator = pdf_upper_bound - pdf_lower_bound
+    vt = v_within_margin(abs_team_performance_difference, draw_margin)
+    numerator = (upper_bound * pdf_upper_bound - lower_bound * pdf_lower_bound)
+
+    # Final value is the ratio of the numerator to the denominator.
+    return vt ** 2 + numerator / denominator
+
+
 
